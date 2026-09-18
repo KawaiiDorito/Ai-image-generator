@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator 18+</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Age Gate */
+        #ageGate {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #ageGate h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ff4466;
+        }
+
+        #ageGate p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            max-width: 500px;
+            line-height: 1.6;
+            color: #999;
+        }
+
+        #ageGate button {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #ageGate .yes-btn {
+            background: #ff4466;
+            color: white;
+        }
+
+        #ageGate .yes-btn:hover {
+            background: #ff5577;
+            transform: scale(1.05);
+        }
+
+        #ageGate .no-btn {
+            background: #333;
+            color: #999;
+        }
+
+        #ageGate .no-btn:hover {
+            background: #444;
+        }
+
+        /* Main App */
+        #app {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #ff4466;
+        }
+
+        header span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Generator Panel */
+        .generator-panel {
+            background: #15151f;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #222;
+        }
+
+        .generator-panel label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #ccc;
+        }
+
+        .generator-panel textarea {
+            width: 100%;
+            min-height: 80px;
+            background: #0a0a0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .generator-panel textarea:focus {
+            outline: none;
+            border-color: #ff4466;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            background: #0a0a0f;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #ff4466;
+        }
+
+        .generate-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #ff4466;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: #ff5577;
+        }
+
+        .generate-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #ff4466;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery-item {
+            background: #15151f;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #222;
+            position: relative;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .gallery-item img:hover {
+            transform: scale(1.02);
+        }
+
+        .gallery-item .prompt-text {
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #888;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-item .download-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .gallery-item:hover .download-btn {
+            opacity: 1;
+        }
+
+        .gallery-item .download-btn:hover {
+            background: rgba(255,68,102,0.8);
+        }
+
+        /* Modal */
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #modal img {
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+
+        #modal .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .controls-row { flex-direction: column; }
+            header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Age Gate -->
+<div id="ageGate">
+    <h1>18+ Only</h1>
+    <p>This site contains AI-generated adult content. You must be 18 years or older to enter. By clicking "I am 18+", you confirm that you are of legal age in your jurisdiction.</p>
+    <button class="yes-btn" onclick="enterSite()">I am 18+</button>
+    <button class="no-btn" onclick="window.location.href='https://www.google.com'">Exit</button>
+</div>
+
+<!-- Main App -->
+<div id="app">
+    <header>
+        <h1>AI Image Generator</h1>
+        <span>Adult Content — 18+ Only</span>
+    </header>
+
+    <div class="generator-panel">
+        <label for="prompt">Enter your prompt:</label>
+        <textarea id="prompt" placeholder="Describe the image you want to generate..."></textarea>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label for="width">Width</label>
+                <select id="width">
+                    <option value="512">512</option>
+                    <option value="768">768</option>
+                    <option value="1024" selected>1024</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="height">Height</label>
+                <select id="height">
+                    <option value="512">512</option>
+                    <option value="768">768</option>
+                    <option value="1024" selected>1024</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="model">Model</label>
+                <select id="model">
+                    <option value="flux" selected>Flux</option>
+                    <option value="flux-realism">Flux Realism</option>
+                    <option value="flux-anime">Flux Anime</option>
+                    <option value="flux-3d">Flux 3D</option>
+                    <option value="turbo">Turbo (Fast)</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="generate-btn" id="generateBtn" onclick="generateImage()">Generate Image</button>
+    </div>
+
+    <div class="loading-container" id="loading">
+        <div class="spinner"></div>
+        <p>Generating image... This can take 10-30 seconds.</p>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <div id="modal" onclick="closeModal()">
+        <span class="close-modal">&times;</span>
+        <img id="modalImg" src="">
+    </div>
+
+    <footer>
+        <p>Images are AI-generated via Pollinations.ai. This site is for adults only.</p>
+    </footer>
+</div>
+
+<script>
+    // Age gate
+    function enterSite() {
+        document.getElementById('ageGate').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        sessionStorage.setItem('ageVerified', 'true');
+    }
+
+    // Auto-check if already verified this session
+    if (sessionStorage.getItem('ageVerified') === 'true') {
+        enterSite();
+    }
+
+    // Image generation
+    let generatedImages = [];
+
+    async function generateImage() {
+        const prompt = document.getElementById('prompt').value.trim();
+        if (!prompt) {
+            alert('Please enter a prompt first.');
+            return;
+        }
+
+        const width = document.getElementById('width').value;
+        const height = document.getElementById('height').value;
+        const model = document.getElementById('model').value;
+        const seed = Math.floor(Math.random() * 1000000);
+
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+        loading.style.display = 'block';
+
+        // Build Pollinations API URL
+        const encodedPrompt = encodeURIComponent(prompt);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=true`;
+
+        try {
+            // Preload the image
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                addToGallery(imageUrl, prompt);
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Image';
+                loading.style.display = 'none';
+            };
+            img.onerror = function() {
+                alert('Failed to generate image. Please try again.');
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Image';
+                loading.style.display = 'none';
+            };
+            img.src = imageUrl;
+        } catch (error) {
+            alert('An error occurred: ' + error.message);
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generate Image';
+            loading.style.display = 'none';
+        }
+    }
+
+    function addToGallery(imageUrl, prompt) {
+        const gallery = document.getElementById('gallery');
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+
+        const promptShort = prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt;
+
+        item.innerHTML = `
+            <img src="${imageUrl}" alt="Generated image" onclick="openModal('${imageUrl}')">
+            <button class="download-btn" onclick="downloadImage('${imageUrl}')" title="Download">&#11015;</button>
+            <div class="prompt-text">${escapeHtml(promptShort)}</div>
+        `;
+
+        gallery.prepend(item);
+    }
+
+    function openModal(url) {
+        document.getElementById('modalImg').src = url;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function downloadImage(url) {
+        fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `ai-generated-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            })
+            .catch(() => {
+                // Fallback: open in new tab
+                window.open(url, '_blank');
+            });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+
+</body>
+</html>
